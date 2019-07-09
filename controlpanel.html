@@ -34,22 +34,27 @@
     </style>
   </head>
   <body>
-    <div class="sidebar branding-below">
-      <div class="block" id="button-bar">
-          <button class="blue" id="rainbowText">Rainbow</button>
+    <div class='sidebar branding-below'>
+      <div class='block' id='button-bar'>
+          <button class='blue' id='rainbowText'>Rainbow</button>
+          <button class='green' id='blackText'>Black</button>
       </div>
-      <div class="block">
-          <input type="checkbox" id="pref">
-          <label for="pref">Use rainbow text by default</label>
+      <div class='block'>
+          <input type='number' id='steps' value='3'>
+          <label for='steps'>Steps in the gradient from one rainbow color to the next</label>
+      </div>
+      <div class='block'>
+          <input type='checkbox' id='autoRainbow'>
+          <label for='autoRainbow'>Use rainbow text by default</label>
       </div>
     </div>
 
-    <div class="sidebar bottom">
-      <img alt="Add-on logo" class="logo" src="https://www.gstatic.com/images/branding/product/1x/translate_48dp.png" width="27" height="27">
-      <span class="gray branding-text">rainbow text experiment</span>
+    <div class='sidebar bottom'>
+      <img alt='Add-on logo' class='logo' src='https://www.gstatic.com/images/branding/product/1x/translate_48dp.png' width='27' height='27'>
+      <span class='gray branding-text'>rainbow text experiment</span>
     </div>
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src='//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'></script>
     <script>
       /**
        * On document load, assign click handlers to each button and try to load the
@@ -57,6 +62,8 @@
        */
       $(function() {
         $('#rainbowText').click(rainbowText);
+        $('#blackText').click(blackText);
+        $('#autoRainbow').on('change', savePref);
         google.script.run.withSuccessHandler(loadPreference)
             .withFailureHandler(showError).getPreferences();
       });
@@ -69,19 +76,36 @@
        */
       function loadPreference(autoRainbow) {
         if (autoRainbow === 'true') {
-          $('#pref').prop('checked', true);
+          $('#autoRainbow').prop('checked', true);
           rainbowText();
         }
       }
 
       /**
-       * Runs a server-side function to translate the user-selected text and update
-       * the sidebar UI with the resulting translation.
+      * to be triggered when #autoRainbow is checked or unchecked 
+      * saves 'true' or 'false' string in a preference named 
+      * after the id of the checkbox element
+      **/
+      function savePref() {
+        var pref = this.checked ? 'true' : 'false';
+        $('#error').remove();
+        google.script.run
+          .withSuccessHandler(function(success, element) {
+            showError('saved pref: ' + pref + element.id, element);
+          })
+          .withFailureHandler(function(msg, element) {
+            showError('error saving preference', element);
+          })
+          .withUserObject(this)
+          .savePref(this.id, pref)
+      }
+
+      /**
+       * Runs a server-side function to change the entire document to rainbow text.
        */
       function rainbowText() {
         this.disabled = true;
         $('#error').remove();
-        var savePrefs = $('#pref').is(':checked');
         google.script.run
             .withSuccessHandler(
               function(success, element) {
@@ -93,7 +117,27 @@
                 element.disabled = false;
               })
             .withUserObject(this)
-            .changeToRainbow(3, savePrefs);
+            .changeToRainbow(parseInt($('#steps').val()));
+      }
+
+      /**
+       * Runs a server-side function to change the text color of the entire document to black.
+       */
+      function blackText() {
+        this.disabled = true;
+        $('#error').remove();
+        google.script.run
+            .withSuccessHandler(
+              function(success, element) {
+                element.disabled = false;
+              })
+            .withFailureHandler(
+              function(msg, element) {
+                showError(msg, $('#button-bar'));
+                element.disabled = false;
+              })
+            .withUserObject(this)
+            .changeToBlack();
       }
 
 

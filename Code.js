@@ -51,6 +51,11 @@ function showSidebar() {
   DocumentApp.getUi().showSidebar(ui);
 }
 
+/**
+* Hard coded rgb values for the rainbow spectrum. Can 
+* be replaced with any object array with the format:
+* [{'r': [int value], 'g': [int value], 'b': [int value]}, ....]
+**/
 var colors = [
   {r: 255, g: 0, b:0, name: 'red'}, 
   {r: 255, g: 165, b:0, name: 'orange'},
@@ -82,9 +87,10 @@ function generateSpectrumArray (steps) {
     for (var step = 1; step <= steps; step++ ){
       var tempColor = {};
       var stepFraction = 1 / (steps + 1);
-      tempColor.r = c1.r + ((c2.r - c1.r) * stepFraction * step);
-      tempColor.g = c1.g + ((c2.g - c1.g) * stepFraction * step);
-      tempColor.b = c1.b + ((c2.b - c1.b) * stepFraction * step);
+      tempColor.r = Math.floor(c1.r + ((c2.r - c1.r) * stepFraction * step));
+      tempColor.g = Math.floor(c1.g + ((c2.g - c1.g) * stepFraction * step));
+      tempColor.b = Math.floor(c1.b + ((c2.b - c1.b) * stepFraction * step));
+      hexColorsToReturn.push(getHex(tempColor));
     }
   }
   hexColorsToReturn.push(getHex(colors[colors.length -1]));
@@ -94,12 +100,11 @@ function generateSpectrumArray (steps) {
 /**
  * Gets the full text of the document and changes it to rainbow colors
  *
- * @param {int} steps Number of colors between each hardcoded value in the colors array. 
- * @param {string} dest The two-letter short form for the destination language.
+ * @param {number} steps Number of colors between each hardcoded value in the colors array. 
  * @param {boolean} savePref Whether to automatically change text to rainbow on opening the add-on 
  * @return {boolean} Returns true upon success.
  */
-function changeToRainbow (steps, savePref) {
+function changeToRainbow (steps) {
   var body = DocumentApp.getActiveDocument().getBody();
   var text = body.editAsText();
   var spectrum = generateSpectrumArray(steps);
@@ -111,14 +116,35 @@ function changeToRainbow (steps, savePref) {
     if (spec_index.i == spectrum.length - 1) spec_index.countUp = false;
     if (spec_index.i == 0) spec_index.countUp = true;
   }
-  body.editAsText().setBackgroundColor("#ddddff")
-  var pref = 'false';
-  if (savePref) pref = 'true';
-   PropertiesService.getUserProperties()
-        .setProperty('rainbowPref', savePref);
+  body.editAsText().setBackgroundColor('#ddddff')
   
   if (!text.getText().length) throw new Error('Type something in the document.');
   return true;
+}
+
+/**
+ * Gets the full text of the document and gives it the color black
+ *
+ * @param {boolean} savePref Whether to automatically change text to rainbow on opening the add-on 
+ * @return {boolean} Returns true upon success.
+ */
+function changeToBlack() {
+  var body = DocumentApp.getActiveDocument().getBody();
+  var text = body.editAsText();
+  text.setForegroundColor(0, text.getText().length - 1, '#000000');
+  body.editAsText().setBackgroundColor('#ffffff');
+  return true;
+}
+
+/**
+* @param {string} name Name of the preference to save
+* @param {string} value Value of the preference to save
+* @return {boolean} True upon sucess
+**/
+function savePref(name, value) {
+  PropertiesService.getUserProperties()
+    .setProperty(name, value);
+    return true;
 }
 
 
@@ -131,5 +157,5 @@ function changeToRainbow (steps, savePref) {
  */
 function getPreferences() {
   var userProperties = PropertiesService.getUserProperties();
-  return userProperties.getProperty('rainbowPref');
+  return userProperties.getProperty('autoRainbow');
 }
